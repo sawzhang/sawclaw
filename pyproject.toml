@@ -1,0 +1,11 @@
+[project]
+name = "sawclaw"
+version = "0.1.0"
+description = "A multi-agent system with Leader-Worker architecture, powered by SkillKit"
+requires-python = ">=3.10"
+dependencies = [
+    "skillkit @ file:///${PROJECT_ROOT}/../agent-skills-engine",
+]
+
+[project.scripts]
+sawclaw = "sawclaw.main:cli"
