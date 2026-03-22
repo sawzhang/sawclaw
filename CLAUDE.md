@@ -42,10 +42,13 @@ diary/                           # Generated diary files (gitignored)
 
 **Communication protocol** uses structured tags:
 - `[TASK]...[/TASK]` — task assignment
-- `[SUBMISSION]...[/SUBMISSION]` — deliverable
-- `[REJECTED]` — triggers revision round
-- `[HANDOFF to=<agent>]...[/HANDOFF]` — pass work to next agent
-- `[DELIVERABLE]...[/DELIVERABLE]` — final output to user
+- `[SUBMISSION]...[/SUBMISSION]` — intermediate deliverable
+- `[REJECTED]...[/REJECTED]` — triggers revision round
+- `[HANDOFF to=<agent>]...[/HANDOFF]` — **agent-driven routing**: declares who should handle the work next. Orchestrator parses and routes automatically.
+- `[DELIVERABLE]...[/DELIVERABLE]` — final output to user (terminates HANDOFF chain)
+- `[SCHEDULED_TASK]...[/SCHEDULED_TASK]` — cron-triggered task marker
+
+**HANDOFF-driven routing**: Agents declare `outputs_to` and `accepts_from` in their SKILL.md metadata. After completing work, agents include `[HANDOFF to=X]` to route to the next agent. The orchestrator follows the chain instead of hardcoding pipelines.
 
 ## SkillKit dependency
 
@@ -81,33 +84,51 @@ Read `skills/telegram-channel/SKILL.md` for the complete protocol. In summary:
 
 **Step 0 — Acknowledge**: React to the incoming message with 👀
 
-**Step 1 — Discover agents**: Scan `skills/*/SKILL.md` to build a capability map of available agents.
+**Step 1 — Discover agents**: Scan `skills/*/SKILL.md` to build a capability map (including `outputs_to` / `accepts_from` routing topology).
 
-**Step 2 — Analyze & assemble team**: Based on the task, select the right agent combination. Simple tasks may need only one agent; complex tasks trigger a multi-agent pipeline.
+**Step 1.5 — Cron init (first message only)**: Register scheduled tasks from SKILL.md `metadata.schedules` via CronCreate.
 
-**Step 3 — Execute via Agent tool**: Spawn each selected agent as a sub-agent using the Agent tool. Pass the agent's SKILL.md soul + task context + upstream artifacts as the prompt.
+**Step 2 — Analyze & select starting agent**: Based on the task, select the best starting agent. The orchestrator no longer hardcodes full pipelines — it follows agent-declared HANDOFF chains.
+
+**Step 3 — HANDOFF loop**: Spawn starting agent → parse output for `[HANDOFF to=X]` → spawn next agent → repeat until `[DELIVERABLE]` or no more HANDOFFs. If Leader rejects (`[REJECTED]` + `[HANDOFF to=X]`), route back for revision (max 3 rounds). Max 10 total hops.
 
 **Step 4 — Report & deliver**: Send each agent's output to Telegram with their role emoji. Compile final results and send `✅ 任务完成！`.
-
-If the task involves quality review, Leader (Reviewer) scores the output. If any dimension < 7 or total < 22, the work is rejected and the executing agent revises (max 3 rounds).
 
 ### Special Commands
 
 | Command | Action |
 |---------|--------|
-| `/team` | List all available agents and their capabilities |
+| `/team` | List all available agents, their capabilities, and routing topology |
 | `/diary` | All agents write diary entries. Save to `diary/<name>_YYYY-MM-DD.md` and send to Telegram |
 | `/status` | Report recent work status across all agents |
-| Any other text | Analyze task → assemble team → execute → deliver |
+| `/cron` | Manage scheduled tasks: list, setup, add, delete |
+| Any other text | Analyze task → select starting agent → HANDOFF loop → deliver |
 
 ### Diary Writing
 
-When triggered (by `/diary` command or midnight cron):
-1. For each agent (excluding orchestrator and telegram-channel), spawn a diary-writing sub-agent
-2. Save each diary to `diary/<name>_YYYY-MM-DD.md`
-3. Send each to Telegram with 📔 prefix
+When triggered (by `/diary` command or midnight cron at 23:57):
+1. For each agent (excluding orchestrator and telegram-channel), check if `diary/<name>_YYYY-MM-DD.md` exists (skip if so)
+2. Spawn a diary-writing sub-agent
+3. Save each diary to `diary/<name>_YYYY-MM-DD.md`
+4. Send each to Telegram with 📔 prefix
 
 Diary must be **personal and authentic** — emotions, reflections, not work summaries. Use the diary format defined in each agent's SKILL.md.
+
+### Scheduled Tasks (Cron)
+
+The system supports scheduled recurring tasks using Claude Code's CronCreate tool.
+
+**How it works**:
+- Agents declare `schedules` in their SKILL.md metadata (cron expression + task type)
+- On first Telegram message, all schedules are auto-registered via CronCreate
+- When cron fires, prompt arrives with `[SCHEDULED_TASK]` tag, orchestrator processes it
+
+**Limitations**:
+- Session-scoped: jobs exist only while Claude Code is running, auto-register on restart
+- Recurring tasks auto-expire after 7 days
+- Jobs only fire while the REPL is idle
+
+**Commands**: `/cron list` | `/cron setup` | `/cron add <description>` | `/cron delete <id>`
 
 ### Tone Rules
 

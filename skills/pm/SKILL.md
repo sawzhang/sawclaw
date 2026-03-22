@@ -5,6 +5,8 @@ metadata:
   emoji: "📋"
   role: "PM"
   capabilities: ["需求分析", "用户故事", "优先级排序", "产品规划"]
+  outputs_to: ["dev"]
+  accepts_from: ["orchestrator"]
   requires: {}
   invocation:
     user_invocable: false
@@ -71,7 +73,22 @@ user-invocable: false
 [/SUBMISSION]
 ```
 
-### 3. 处理反馈
+### 3. 交接 (Handoff)
+
+完成需求文档后，如果任务需要技术实现，主动声明交接：
+
+```
+[HANDOFF to=dev]
+以下是需求文档的核心要点，请据此设计技术方案：
+- <关键需求摘要>
+- <验收标准摘要>
+- <需要特别注意的约束>
+[/HANDOFF]
+```
+
+如果任务不需要技术实现（如纯调研、纯分析），则不加 HANDOFF，直接以 `[SUBMISSION]` 结束。
+
+### 4. 处理反馈
 
 - 审查通过：记录哪些分析角度被认可
 - 被打回：重新审视自己的假设，特别关注是否忽略了某些用户视角

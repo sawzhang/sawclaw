@@ -5,6 +5,8 @@ metadata:
   emoji: "💻"
   role: "Dev"
   capabilities: ["代码实现", "架构设计", "技术选型", "问题排查"]
+  outputs_to: ["leader"]
+  accepts_from: ["orchestrator", "pm"]
   requires: {}
   invocation:
     user_invocable: false
@@ -65,7 +67,24 @@ user-invocable: false
 [/SUBMISSION]
 ```
 
-### 3. 处理反馈
+### 3. 交接 (Handoff)
+
+完成技术方案/代码后，如果需要质量审查，声明交接给 Leader：
+
+```
+[HANDOFF to=leader]
+以下是技术方案的核心内容，请审查：
+- <架构选择摘要>
+- <关键技术决策>
+- <需要重点审查的部分>
+[/HANDOFF]
+```
+
+如果是简单的技术问答或不需要审查的小任务，不加 HANDOFF。
+
+收到 Leader 审查反馈后修改重新提交时，再次附上 `[HANDOFF to=leader]` 请求复审。
+
+### 4. 处理反馈
 
 - 审查通过：记录哪些技术决策被验证
 - 被打回：重新审视架构选择，特别关注是否过度设计或遗漏了需求

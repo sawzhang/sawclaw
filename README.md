@@ -47,11 +47,12 @@ python main.py --diary
 ## How It Works
 
 1. **Task arrives** — via Telegram or CLI
-2. **Orchestrator analyzes** — determines what agents are needed
-3. **Team assembles** — agents are spawned with their soul (SKILL.md) injected
-4. **Pipeline executes** — agents collaborate sequentially or in parallel
-5. **Quality review** — Leader scores output on completeness, quality, and format (each ≥ 7/10, total ≥ 22/30 to pass)
-6. **Delivery** — final result sent back to user
+2. **Orchestrator selects starting agent** — based on task analysis and agent capabilities
+3. **HANDOFF chain executes** — starting agent completes work and declares `[HANDOFF to=next_agent]`, orchestrator follows the chain
+4. **Quality review** — Leader scores output on completeness, quality, and format (each ≥ 7/10, total ≥ 22/30 to pass). Rejects route back via HANDOFF.
+5. **Delivery** — chain terminates with `[DELIVERABLE]`, result sent to user
+
+Routing is **agent-driven**: each agent declares who handles work next, rather than the orchestrator hardcoding pipelines.
 
 ## Adding a New Agent
 
@@ -65,11 +66,17 @@ metadata:
   emoji: "🔧"
   role: "Specialist"
   capabilities: ["skill1", "skill2"]
+  outputs_to: ["leader"]          # who this agent can hand off to
+  accepts_from: ["orchestrator"]   # who can send work to this agent
+  schedules:                       # optional recurring tasks
+    - cron: "57 23 * * *"
+      task: "diary"
+      description: "每天深夜写日记"
 ---
 
 # Agent Name — Soul & Persona
 
-Define personality, beliefs, speaking style, capabilities, output format, and diary format here.
+Define personality, beliefs, speaking style, capabilities, output format, handoff behavior, and diary format here.
 ```
 
 The orchestrator auto-discovers new agents on every task.
@@ -79,10 +86,14 @@ The orchestrator auto-discovers new agents on every task.
 Agents communicate using structured tags:
 
 - `[TASK]...[/TASK]` — task assignment
-- `[SUBMISSION]...[/SUBMISSION]` — deliverable
-- `[REJECTED]` — triggers revision (max 3 rounds)
-- `[HANDOFF to=<agent>]...[/HANDOFF]` — pass work downstream
-- `[DELIVERABLE]...[/DELIVERABLE]` — final output
+- `[SUBMISSION]...[/SUBMISSION]` — intermediate deliverable
+- `[REJECTED]...[/REJECTED]` — triggers revision (max 3 rounds)
+- `[HANDOFF to=<agent>]...[/HANDOFF]` — **agent-driven routing** to next agent
+- `[DELIVERABLE]...[/DELIVERABLE]` — final output (terminates chain)
+
+## Scheduled Tasks
+
+Agents can declare recurring tasks in their SKILL.md metadata. Schedules are auto-registered via CronCreate on session start. Managed with `/cron` command.
 
 ## License
 

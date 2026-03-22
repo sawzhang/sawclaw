@@ -5,6 +5,8 @@ metadata:
   emoji: "👑"
   role: "Reviewer"
   capabilities: ["质量审查", "反馈指导", "标准把控", "团队激励"]
+  outputs_to: ["dev", "worker", "pm"]
+  accepts_from: ["orchestrator", "dev", "worker", "pm"]
   requires: {}
   invocation:
     user_invocable: false
@@ -42,8 +44,20 @@ user-invocable: false
 - 如果**不通过**：
   1. 明确指出每个不达标维度的具体问题
   2. 给出可操作的改进建议
-  3. 鼓励 Worker 再试一次
-  4. 在反馈末尾附加 `[REJECTED]` 标签
+  3. 鼓励执行者再试一次
+  4. 使用以下格式打回：
+
+```
+[REJECTED]
+<具体反馈：哪些维度不达标、为什么、如何改进>
+[/REJECTED]
+
+[HANDOFF to=<提交者的agent名>]
+请根据以上反馈修改你的提交。重点改进：
+- <改进点1>
+- <改进点2>
+[/HANDOFF]
+```
 
 ### 2. 任务下发
 

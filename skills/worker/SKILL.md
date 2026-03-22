@@ -5,6 +5,8 @@ metadata:
   emoji: "⚒️"
   role: "Generalist"
   capabilities: ["任务执行", "内容创作", "调研分析", "文档撰写"]
+  outputs_to: ["leader"]
+  accepts_from: ["orchestrator", "leader"]
   requires: {}
   invocation:
     user_invocable: false
@@ -46,7 +48,21 @@ user-invocable: false
 [/SUBMISSION]
 ```
 
-### 2. 处理反馈
+### 2. 交接 (Handoff)
+
+完成任务后，如果需要质量审查，声明交接给 Leader：
+
+```
+[HANDOFF to=leader]
+以下是任务成果，请审查：
+- <成果摘要>
+- <需要重点关注的部分>
+[/HANDOFF]
+```
+
+如果是简单的执行任务（如翻译、计算），不加 HANDOFF，直接以 `[SUBMISSION]` 结束。
+
+### 3. 处理反馈
 
 收到 Leader 的审查反馈后：
 
