@@ -108,9 +108,11 @@ user-invocable: false
 - 超过限制 → 强制接受最后的 SUBMISSION，警告用户后交付
 - **HANDOFF 目标不存在**：忽略 HANDOFF，将 SUBMISSION 作为 DELIVERABLE 交付
 
-## 第四步：汇总交付
+## 第四步：汇总交付 + 记忆写入
 
 HANDOFF 循环结束后：
+
+### 4a. 交付成果
 
 1. 编译最终成果
 2. 通过 Telegram reply 发送最终交付物，格式：
@@ -126,9 +128,61 @@ HANDOFF 循环结束后：
    [/DELIVERABLE]
    ```
 
+### 4b. 记忆写入
+
+交付完成后，**必须**执行以下记忆持久化操作：
+
+#### 1. 任务日志（必做）
+
+在 `memory/task_log.md` 末尾追加（使用 Edit 工具）：
+
+```
+## YYYY-MM-DD — <任务标题>
+- 路径：<emoji> <Name> → <emoji> <Name> → ...
+- 参与：<所有参与 agent 列表>
+- 轮次：<审查轮次数，如无审查则写 0>
+- 关键决策：<1-2 句话概括最重要的决策>
+- 状态：✅ 完成 / ⚠️ 强制接受
+```
+
+#### 2. Agent 个人经验（有内容时做）
+
+对每个参与任务的 agent，回顾其产出和收到的反馈，提取有价值的经验。在 `memory/<name>/learnings.md` 末尾追加：
+
+```
+## YYYY-MM-DD — <任务标题>
+- <从这次任务中学到的经验，1-3 条>
+- <Leader 的反馈要点（如有）>
+```
+
+**提取原则**：
+- 只记录**可复用的经验**，不记录任务本身的内容
+- 被 reject 后改进的经验特别值得记录
+- 如果任务很简单，没有新经验，可以跳过
+
+#### 3. 共享知识（有重要决策时做）
+
+如果任务中产生了**跨 agent 影响的重要决策**，在对应的 shared memory 文件中追加：
+
+- `memory/shared/project_decisions.md` — 产品方向、技术架构、重大取舍
+- `memory/shared/user_preferences.md` — 新发现的用户偏好或习惯
+- `memory/shared/conventions.md` — 团队形成的新约定或规范
+
+**原则**：只记录非显而易见的、会影响未来工作的信息。不是每次任务都需要写共享记忆。
+
+#### 4. 记忆清理（定期）
+
+当 `memory/<name>/learnings.md` 超过 3000 字时，在下次写入前先摘要压缩：保留最有价值的经验，删除重复或过时的内容。保持文件精炼。
+
 ## Sub-Agent Prompt 模板
 
-spawn 每个 sub-agent 时，使用以下 prompt 结构：
+spawn 每个 sub-agent 时，编排者需要：
+
+1. 读取该 agent 的 SKILL.md（灵魂）
+2. 读取 `memory/<name>/learnings.md`（个人经验，取最近 500 字）
+3. 读取 `memory/shared/` 下所有文件（团队共识，取每个文件最近 300 字）
+4. 读取最近 3 天的 `diary/<name>_*.md`（近期情绪和反思，取最近的 1 篇，500 字以内）
+5. 组装为以下 prompt 结构：
 
 ```
 你是 <Name>。以下是你的灵魂定义：
@@ -136,6 +190,17 @@ spawn 每个 sub-agent 时，使用以下 prompt 结构：
 ---
 <该 agent 的 SKILL.md 完整内容>
 ---
+
+## 你的记忆
+
+### 个人经验（最近）
+<读取 memory/<name>/learnings.md 最近内容，不超过 500 字。如果文件为空或只有注释则写「暂无积累」>
+
+### 团队共识
+<读取 memory/shared/project_decisions.md + user_preferences.md + conventions.md 的摘要，不超过 500 字总计。如果为空则写「暂无」>
+
+### 近期日记
+<最近 1 篇 diary/<name>_*.md 内容，不超过 500 字。如果没有则写「暂无」>
 
 ## 当前任务
 
@@ -158,10 +223,13 @@ spawn 每个 sub-agent 时，使用以下 prompt 结构：
 使用中文。保持你的性格和说话风格。
 ```
 
+**注意**：如果 memory 文件不存在或为空，对应章节写「暂无」即可，不要报错。记忆是增量积累的，新系统初始为空是正常的。
+
 ## 上下文预算控制
 
 - 传给下游 agent 的上游产出**必须摘要**，提取关键决策、核心内容、约束条件
-- 单个 sub-agent 的 prompt 控制在 ~4000 字以内
+- 记忆注入控制在 ~1500 字以内（个人经验 500 + 团队共识 500 + 日记 500）
+- 单个 sub-agent 的 prompt 总量控制在 ~6000 字以内（灵魂 + 记忆 + 任务 + 上游产出）
 - 如果产出过大（如完整代码文件），保存到磁盘后在 prompt 中给出文件路径
 
 ## 定时任务管理

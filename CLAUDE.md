@@ -27,12 +27,22 @@ Requires `.env` with `OPENAI_BASE_URL`, `OPENAI_API_KEY`, `MINIMAX_MODEL` (defau
 ```
 main.py                          # Python standalone orchestration (SkillKit mode)
 skills/
-  orchestrator/SKILL.md          # Meta-skill: dynamic team assembly & coordination
+  orchestrator/SKILL.md          # Meta-skill: HANDOFF routing & memory management
   pm/SKILL.md                    # Product Manager soul
   dev/SKILL.md                   # Developer soul
   leader/SKILL.md                # Reviewer soul (from SawClaw v1)
   worker/SKILL.md                # Generalist soul (from SawClaw v1)
   telegram-channel/SKILL.md      # Telegram gateway — routes to orchestrator
+memory/                          # Persistent agent memory (tracked in git)
+  pm/learnings.md                # PM's accumulated experience
+  dev/learnings.md               # Dev's accumulated experience
+  leader/learnings.md            # Leader's review insights
+  worker/learnings.md            # Worker's accumulated experience
+  shared/                        # Cross-agent shared knowledge
+    project_decisions.md         # Product/tech decisions
+    user_preferences.md          # User preferences learned from interaction
+    conventions.md               # Team conventions
+  task_log.md                    # Structured task history
 diary/                           # Generated diary files (gitignored)
 ```
 
@@ -49,6 +59,8 @@ diary/                           # Generated diary files (gitignored)
 - `[SCHEDULED_TASK]...[/SCHEDULED_TASK]` — cron-triggered task marker
 
 **HANDOFF-driven routing**: Agents declare `outputs_to` and `accepts_from` in their SKILL.md metadata. After completing work, agents include `[HANDOFF to=X]` to route to the next agent. The orchestrator follows the chain instead of hardcoding pipelines.
+
+**Memory system**: Persistent memory in `memory/` directory. Each agent has personal learnings (`memory/<name>/learnings.md`), plus shared team knowledge (`memory/shared/`). Orchestrator injects relevant memory when spawning agents, and writes back learnings after task completion.
 
 ## SkillKit dependency
 

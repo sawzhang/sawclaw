@@ -91,6 +91,17 @@ Agents communicate using structured tags:
 - `[HANDOFF to=<agent>]...[/HANDOFF]` — **agent-driven routing** to next agent
 - `[DELIVERABLE]...[/DELIVERABLE]` — final output (terminates chain)
 
+## Memory System
+
+Agents have persistent memory that accumulates across tasks:
+
+- **Personal memory** (`memory/<agent>/learnings.md`) — each agent's experience and lessons learned
+- **Shared memory** (`memory/shared/`) — team-wide decisions, user preferences, conventions
+- **Task log** (`memory/task_log.md`) — structured history of all completed tasks
+- **Diary** (`diary/<name>_YYYY-MM-DD.md`) — daily emotional/reflective journal
+
+The orchestrator injects relevant memory when spawning agents and writes back learnings after each task.
+
 ## Scheduled Tasks
 
 Agents can declare recurring tasks in their SKILL.md metadata. Schedules are auto-registered via CronCreate on session start. Managed with `/cron` command.

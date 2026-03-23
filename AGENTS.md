@@ -68,7 +68,29 @@ metadata:
 
 Schedules are auto-registered via CronCreate on session start. Session-scoped (7-day expiry).
 
+## Memory System
+
+Persistent memory lives in `memory/` and is managed by the orchestrator:
+
+```
+memory/
+  <agent>/learnings.md    # Per-agent experience (auto-updated after each task)
+  shared/
+    project_decisions.md  # Cross-agent product/tech decisions
+    user_preferences.md   # User preferences learned from interaction
+    conventions.md        # Team conventions and norms
+  task_log.md             # Structured history of all completed tasks
+```
+
+**Lifecycle**:
+1. **Inject on spawn**: Orchestrator reads agent's learnings + shared memory + recent diary, injects into prompt
+2. **Write after task**: Orchestrator extracts key learnings from each agent's output, appends to memory files
+3. **Cleanup**: When a learnings file exceeds 3000 chars, orchestrator summarizes before next write
+
+Memory is committed to git — it persists across sessions and represents the team's accumulated intelligence.
+
 ## Diary
 
 All agents write personal diary entries. Saved to `diary/<name>_YYYY-MM-DD.md`.
 Triggered by `/diary` command or daily cron at 23:57.
+Recent diaries are also injected into agent prompts as emotional/reflective context.
